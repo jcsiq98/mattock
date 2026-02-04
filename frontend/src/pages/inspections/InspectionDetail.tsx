@@ -702,6 +702,8 @@ function ItemCard({
         <div className="mt-2">
           <InlinePhotoGallery
             photoIds={item.photoIds}
+            onPhotoDeleted={onPhotoDeleted}
+            editable={!disabled}
           />
         </div>
       )}

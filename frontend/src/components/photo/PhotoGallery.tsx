@@ -322,10 +322,15 @@ function PhotoViewer({
  */
 interface InlinePhotoGalleryProps {
   photoIds: string[];
-  onViewAll?: () => void;
+  onPhotoDeleted?: (photoId: string) => void;
+  editable?: boolean;
 }
 
-export function InlinePhotoGallery({ photoIds, onViewAll }: InlinePhotoGalleryProps) {
+export function InlinePhotoGallery({ 
+  photoIds, 
+  onPhotoDeleted,
+  editable = true 
+}: InlinePhotoGalleryProps) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
@@ -348,6 +353,25 @@ export function InlinePhotoGallery({ photoIds, onViewAll }: InlinePhotoGalleryPr
     }
     loadPhotos();
   }, [photoIds, photoIds.length]); // Re-run when photoIds changes
+
+  async function handleDelete(photoId: string) {
+    try {
+      await photoService.delete(photoId);
+      setPhotos((prev) => prev.filter((p) => p.id !== photoId));
+      onPhotoDeleted?.(photoId);
+      
+      // Adjust selected index if needed
+      if (selectedIndex !== null) {
+        if (photos.length <= 1) {
+          setSelectedIndex(null);
+        } else if (selectedIndex >= photos.length - 1) {
+          setSelectedIndex(photos.length - 2);
+        }
+      }
+    } catch (error) {
+      console.error('Failed to delete photo:', error);
+    }
+  }
 
   if (loading && photoIds.length > 0) {
     return (
@@ -387,6 +411,7 @@ export function InlinePhotoGallery({ photoIds, onViewAll }: InlinePhotoGalleryPr
           currentIndex={selectedIndex}
           onIndexChange={setSelectedIndex}
           onClose={() => setSelectedIndex(null)}
+          onDelete={editable ? handleDelete : undefined}
         />
       )}
     </>
