@@ -20,11 +20,9 @@ export const templateService = {
    * Get only active templates
    */
   async getActive(): Promise<ChecklistTemplate[]> {
-    return db.templates
-      .where('isActive')
-      .equals(1) // Dexie stores booleans as 0/1
-      .reverse()
-      .sortBy('updatedAt');
+    // Filter client-side to handle both boolean true and undefined (legacy)
+    const all = await db.templates.orderBy('updatedAt').reverse().toArray();
+    return all.filter(t => t.isActive !== false);
   },
 
   /**
@@ -156,7 +154,8 @@ export const templateService = {
    * Count active templates
    */
   async countActive(): Promise<number> {
-    return db.templates.where('isActive').equals(1).count();
+    const all = await db.templates.toArray();
+    return all.filter(t => t.isActive !== false).length;
   },
 };
 
