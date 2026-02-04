@@ -5,8 +5,6 @@ import {
   ClipboardDocumentListIcon,
   DocumentMagnifyingGlassIcon,
   ArrowRightIcon,
-  ClockIcon,
-  CheckCircleIcon,
   ExclamationTriangleIcon,
 } from '@heroicons/react/24/outline';
 import { inspectionService } from '../services/inspectionService';

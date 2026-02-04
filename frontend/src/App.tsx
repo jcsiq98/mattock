@@ -6,6 +6,7 @@ import { TemplateEditor } from './pages/templates/TemplateEditor';
 import { InspectionList } from './pages/inspections/InspectionList';
 import { NewInspection } from './pages/inspections/NewInspection';
 import { InspectionDetail } from './pages/inspections/InspectionDetail';
+import { InspectionPDF } from './pages/inspections/InspectionPDF';
 import { Settings } from './pages/Settings';
 import { useDatabase } from './hooks/useDatabase';
 
@@ -25,6 +26,7 @@ function AppContent() {
         <Route path="inspections" element={<InspectionList />} />
         <Route path="inspections/new" element={<NewInspection />} />
         <Route path="inspections/:id" element={<InspectionDetail />} />
+        <Route path="inspections/:id/pdf" element={<InspectionPDF />} />
 
         {/* Settings */}
         <Route path="settings" element={<Settings />} />

@@ -7,9 +7,8 @@ import {
   TrashIcon,
   DocumentTextIcon,
   PlayIcon,
-  ChevronRightIcon,
-  MapPinIcon,
   CalendarIcon,
+  DocumentArrowDownIcon,
 } from '@heroicons/react/24/outline';
 import { inspectionService } from '../../services/inspectionService';
 import { photoService } from '../../services/photoService';
@@ -86,13 +85,6 @@ export function InspectionList() {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
-    });
-  }
-
-  function formatTime(date: Date) {
-    return new Date(date).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
     });
   }
 
@@ -234,6 +226,16 @@ export function InspectionList() {
               </>
             )}
           </button>
+          {inspection.status === 'completed' && (
+            <button
+              onClick={() => navigate(`/inspections/${inspection.id}/pdf`)}
+              className="btn-secondary p-2"
+              aria-label="Generate PDF"
+              title="Generate PDF Report"
+            >
+              <DocumentArrowDownIcon className="w-5 h-5" />
+            </button>
+          )}
           <button
             onClick={() => setDeleteConfirm(inspection.id)}
             className="btn p-2 text-slate-400 hover:text-danger-500 hover:bg-danger-50"

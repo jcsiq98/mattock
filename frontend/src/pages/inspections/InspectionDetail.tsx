@@ -14,6 +14,7 @@ import {
   EllipsisVerticalIcon,
   CalendarIcon,
   UserIcon,
+  DocumentIcon,
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import { inspectionService } from '../../services/inspectionService';
@@ -427,9 +428,19 @@ export function InspectionDetail() {
           ))}
       </div>
 
-      {/* Complete Button (fixed at bottom) */}
-      {!isCompleted && (
-        <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent pt-8">
+      {/* Bottom Actions (fixed at bottom) */}
+      <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-slate-50 via-slate-50 to-transparent pt-8">
+        {isCompleted ? (
+          /* Generate PDF Button for completed inspections */
+          <button
+            onClick={() => navigate(`/inspections/${inspection.id}/pdf`)}
+            className="w-full py-4 rounded-xl font-semibold text-lg bg-primary-600 text-white hover:bg-primary-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+          >
+            <DocumentIcon className="w-6 h-6" />
+            Generate PDF Report
+          </button>
+        ) : (
+          /* Complete Button for in-progress inspections */
           <button
             onClick={() => setShowCompleteModal(true)}
             disabled={!canComplete}
@@ -448,8 +459,8 @@ export function InspectionDetail() {
               `${summary.pendingCount} item${summary.pendingCount !== 1 ? 's' : ''} remaining`
             )}
           </button>
-        </div>
-      )}
+        )}
+      </div>
 
       {/* Complete Confirmation Modal */}
       {showCompleteModal && (

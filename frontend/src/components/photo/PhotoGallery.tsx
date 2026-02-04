@@ -15,18 +15,12 @@ import { formatGeolocation, formatFileSize } from '../../types/photo';
 import { AnnotationEditor } from './AnnotationEditor';
 
 interface PhotoGalleryProps {
-  inspectionId: string;
-  sectionId?: string;
-  itemId?: string;
   photoIds: string[];
   onPhotoDeleted?: (photoId: string) => void;
   editable?: boolean;
 }
 
 export function PhotoGallery({
-  inspectionId,
-  sectionId,
-  itemId,
   photoIds,
   onPhotoDeleted,
   editable = true,
