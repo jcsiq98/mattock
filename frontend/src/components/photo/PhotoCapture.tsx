@@ -1,7 +1,6 @@
 import { useRef, useState } from 'react';
 import {
   CameraIcon,
-  PhotoIcon,
   XMarkIcon,
   MapPinIcon,
   ExclamationTriangleIcon,
@@ -54,6 +53,7 @@ export function PhotoCapture({
 
       // Show preview
       setPreviewImage(imageData);
+      setProcessing(false);
     } catch (err) {
       console.error('Error processing photo:', err);
       setError('Failed to process photo. Please try again.');
@@ -94,6 +94,20 @@ export function PhotoCapture({
       setError('Failed to save photo. Please try again.');
       setProcessing(false);
     }
+  }
+
+  function handleRetake() {
+    setPreviewImage(null);
+    setGeolocation(null);
+    setError(null);
+    setProcessing(false);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    // Trigger file input again for retake
+    setTimeout(() => {
+      fileInputRef.current?.click();
+    }, 100);
   }
 
   function handleCancel() {
@@ -167,7 +181,7 @@ export function PhotoCapture({
           {/* Actions */}
           <div className="flex gap-3">
             <button
-              onClick={handleCancel}
+              onClick={handleRetake}
               className="flex-1 py-3 rounded-xl font-semibold bg-white/20 text-white"
               disabled={processing}
             >
@@ -238,7 +252,7 @@ export function PhotoCapture({
 }
 
 /**
- * Compact photo capture button for inline use
+ * Compact photo capture button for inline use - WITH PREVIEW
  */
 interface PhotoCaptureButtonProps {
   inspectionId: string;
@@ -257,6 +271,9 @@ export function PhotoCaptureButton({
 }: PhotoCaptureButtonProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [processing, setProcessing] = useState(false);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [geolocation, setGeolocation] = useState<GeoLocation | null>(null);
+  const [locationStatus, setLocationStatus] = useState<'pending' | 'granted' | 'unavailable'>('pending');
 
   async function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -265,29 +282,155 @@ export function PhotoCaptureButton({
     setProcessing(true);
 
     try {
-      // Convert and compress in one go
+      // Convert file to base64
       const imageData = await photoService.fileToBase64(file);
-      const compressedImage = await photoService.compressImage(imageData, 1920, 0.8);
       
-      // Get geolocation (non-blocking)
+      // Get geolocation
+      setLocationStatus('pending');
       const location = await photoService.getCurrentLocation();
+      if (location) {
+        setGeolocation(location);
+        setLocationStatus('granted');
+      } else {
+        setLocationStatus('unavailable');
+      }
+
+      // Show preview instead of saving directly
+      setPreviewImage(imageData);
+      setProcessing(false);
+    } catch (err) {
+      console.error('Error processing photo:', err);
+      setProcessing(false);
+    }
+  }
+
+  async function handleSavePhoto() {
+    if (!previewImage) return;
+
+    setProcessing(true);
+
+    try {
+      // Compress the image
+      const compressedImage = await photoService.compressImage(previewImage, 1920, 0.8);
 
       // Create the photo
       const photo = await photoService.create(inspectionId, compressedImage, {
         sectionId,
         itemId,
-        geolocation: location || undefined,
+        geolocation: geolocation || undefined,
       });
 
       onPhotoAdded(photo.id);
-    } catch (err) {
-      console.error('Error capturing photo:', err);
-    } finally {
+      
+      // Reset state
+      setPreviewImage(null);
+      setGeolocation(null);
       setProcessing(false);
+      
+      // Clear the file input
       if (fileInputRef.current) {
         fileInputRef.current.value = '';
       }
+    } catch (err) {
+      console.error('Error saving photo:', err);
+      setProcessing(false);
     }
+  }
+
+  function handleRetake() {
+    setPreviewImage(null);
+    setGeolocation(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+    // Trigger file input again
+    setTimeout(() => {
+      fileInputRef.current?.click();
+    }, 100);
+  }
+
+  function handleCancel() {
+    setPreviewImage(null);
+    setGeolocation(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }
+
+  // Preview modal
+  if (previewImage) {
+    return (
+      <div className="fixed inset-0 bg-black z-50 flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 bg-black/80">
+          <button
+            onClick={handleCancel}
+            className="text-white p-2"
+            aria-label="Cancel"
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+          <span className="text-white font-medium">Preview Photo</span>
+          <div className="w-10" />
+        </div>
+
+        {/* Image Preview */}
+        <div className="flex-1 flex items-center justify-center overflow-hidden p-4">
+          <img
+            src={previewImage}
+            alt="Preview"
+            className="max-w-full max-h-full object-contain rounded-lg"
+          />
+        </div>
+
+        {/* Footer with location and actions */}
+        <div className="p-4 bg-black/80 space-y-4">
+          {/* Location Status */}
+          <div className="flex items-center gap-2 text-sm">
+            <MapPinIcon className="w-4 h-4 text-white" />
+            {locationStatus === 'pending' && (
+              <span className="text-yellow-400">Getting location...</span>
+            )}
+            {locationStatus === 'granted' && geolocation && (
+              <span className="text-green-400">
+                📍 {geolocation.latitude.toFixed(4)}, {geolocation.longitude.toFixed(4)}
+              </span>
+            )}
+            {locationStatus === 'unavailable' && (
+              <span className="text-gray-400">Location unavailable</span>
+            )}
+          </div>
+
+          {/* Actions */}
+          <div className="flex gap-3">
+            <button
+              onClick={handleRetake}
+              className="flex-1 py-3 rounded-xl font-semibold bg-white/20 text-white active:bg-white/30"
+              disabled={processing}
+            >
+              Retake
+            </button>
+            <button
+              onClick={handleSavePhoto}
+              disabled={processing}
+              className="flex-1 py-3 rounded-xl font-semibold bg-primary-500 text-white disabled:opacity-50 active:bg-primary-600"
+            >
+              {processing ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin w-5 h-5" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                  </svg>
+                  Saving...
+                </span>
+              ) : (
+                'Use Photo'
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -322,4 +465,3 @@ export function PhotoCaptureButton({
     </>
   );
 }
-

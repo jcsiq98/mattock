@@ -318,7 +318,7 @@ function PhotoViewer({
 }
 
 /**
- * Compact inline gallery for item cards
+ * Compact inline gallery for item cards - shows ALL photos
  */
 interface InlinePhotoGalleryProps {
   photoIds: string[];
@@ -328,45 +328,56 @@ interface InlinePhotoGalleryProps {
 export function InlinePhotoGallery({ photoIds, onViewAll }: InlinePhotoGalleryProps) {
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadPhotos() {
-      if (photoIds.length === 0) return;
+      if (photoIds.length === 0) {
+        setPhotos([]);
+        setLoading(false);
+        return;
+      }
       
+      setLoading(true);
+      // Load ALL photos, not just first 4
       const loaded = await Promise.all(
-        photoIds.slice(0, 4).map((id) => photoService.getById(id))
+        photoIds.map((id) => photoService.getById(id))
       );
       setPhotos(loaded.filter((p): p is Photo => p !== undefined));
+      setLoading(false);
     }
     loadPhotos();
-  }, [photoIds]);
+  }, [photoIds, photoIds.length]); // Re-run when photoIds changes
+
+  if (loading && photoIds.length > 0) {
+    return (
+      <div className="flex items-center gap-2 mt-2">
+        {photoIds.map((_, i) => (
+          <div key={i} className="w-12 h-12 rounded-lg bg-slate-100 animate-pulse" />
+        ))}
+      </div>
+    );
+  }
 
   if (photos.length === 0) return null;
 
   return (
     <>
-      <div className="flex items-center gap-1 mt-2">
-        {photos.slice(0, 3).map((photo, index) => (
+      {/* Show ALL photos as thumbnails */}
+      <div className="flex items-center gap-2 mt-2 overflow-x-auto scrollbar-hide">
+        {photos.map((photo, index) => (
           <button
             key={photo.id}
             onClick={() => setSelectedIndex(index)}
-            className="w-10 h-10 rounded overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary-300 transition-all"
+            className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary-300 transition-all border border-slate-200"
           >
             <img
               src={photo.thumbnailData || photo.imageData}
-              alt=""
+              alt={`Photo ${index + 1}`}
               className="w-full h-full object-cover"
             />
           </button>
         ))}
-        {photoIds.length > 3 && (
-          <button
-            onClick={() => setSelectedIndex(0)}
-            className="w-10 h-10 rounded bg-slate-100 flex items-center justify-center text-xs font-medium text-slate-600 hover:bg-slate-200"
-          >
-            +{photoIds.length - 3}
-          </button>
-        )}
       </div>
 
       {/* Full viewer when clicking a thumbnail */}
