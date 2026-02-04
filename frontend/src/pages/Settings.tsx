@@ -262,18 +262,61 @@ export function Settings() {
       </section>
 
       {/* App Info */}
-      <section className="card space-y-2">
+      <section className="card space-y-3">
         <h3 className="font-semibold text-slate-900 flex items-center gap-2">
           <InformationCircleIcon className="w-5 h-5" />
           About
         </h3>
-        <div className="text-sm text-slate-600 space-y-1">
-          <p><strong>Property Inspector</strong> v0.7.0</p>
-          <p>Mobile-first inspection app with offline support</p>
-          <p className="text-xs text-slate-400 pt-2">
-            Milestone 7 Complete • MVP in Progress
-          </p>
+        <div className="flex items-center gap-4">
+          <div className="w-14 h-14 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <svg className="w-9 h-9 text-primary-600" viewBox="0 0 100 100" fill="none">
+              <path
+                d="M25 70V35l25-15 25 15v35l-25 15-25-15z"
+                stroke="currentColor"
+                strokeWidth="6"
+                strokeLinejoin="round"
+              />
+              <circle cx="50" cy="50" r="7" fill="currentColor" />
+            </svg>
+          </div>
+          <div>
+            <p className="font-semibold text-slate-900">Property Inspector</p>
+            <p className="text-sm text-slate-500">Version 0.9.0</p>
+          </div>
         </div>
+        <div className="bg-slate-50 rounded-lg p-3 text-sm text-slate-600">
+          <p>Mobile-first property inspection app with:</p>
+          <ul className="mt-2 space-y-1 text-slate-500">
+            <li className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-success-500 rounded-full" />
+              Custom inspection templates
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-success-500 rounded-full" />
+              Photo capture & annotation
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-success-500 rounded-full" />
+              Offline-first architecture
+            </li>
+            <li className="flex items-center gap-2">
+              <span className="w-1.5 h-1.5 bg-success-500 rounded-full" />
+              Professional PDF reports
+            </li>
+          </ul>
+        </div>
+        <p className="text-xs text-slate-400">
+          Milestone 9 Complete • MVP Ready
+        </p>
+        <button
+          onClick={() => {
+            localStorage.removeItem('mattock_onboarding_complete');
+            window.location.reload();
+          }}
+          className="text-xs text-primary-600 hover:text-primary-700 font-medium"
+        >
+          Show Welcome Screen Again
+        </button>
       </section>
 
       {/* PWA Install Hint */}

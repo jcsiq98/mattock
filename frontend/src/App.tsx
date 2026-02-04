@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell';
 import { Dashboard } from './pages/Dashboard';
@@ -9,6 +10,10 @@ import { InspectionDetail } from './pages/inspections/InspectionDetail';
 import { InspectionPDF } from './pages/inspections/InspectionPDF';
 import { Settings } from './pages/Settings';
 import { useDatabase } from './hooks/useDatabase';
+import { WelcomeScreen } from './components/onboarding';
+import { ErrorBoundary } from './components/common';
+
+const ONBOARDING_KEY = 'mattock_onboarding_complete';
 
 function AppContent() {
   return (
@@ -81,19 +86,37 @@ function ErrorScreen({ message }: { message: string }) {
 
 function App() {
   const { isReady, error } = useDatabase();
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+
+  // Check if onboarding is complete
+  useEffect(() => {
+    const isComplete = localStorage.getItem(ONBOARDING_KEY) === 'true';
+    setShowOnboarding(!isComplete);
+  }, []);
+
+  function handleOnboardingComplete() {
+    localStorage.setItem(ONBOARDING_KEY, 'true');
+    setShowOnboarding(false);
+  }
 
   if (error) {
     return <ErrorScreen message={error} />;
   }
 
-  if (!isReady) {
+  if (!isReady || showOnboarding === null) {
     return <LoadingScreen />;
   }
 
+  if (showOnboarding) {
+    return <WelcomeScreen onComplete={handleOnboardingComplete} />;
+  }
+
   return (
-    <BrowserRouter>
-      <AppContent />
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 
