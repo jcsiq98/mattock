@@ -38,7 +38,7 @@ export const syncQueueService = {
 
     // Create new queue item
     const item = createSyncQueueItem(action, entityType, entityId, data);
-    await db.syncQueue.add(item);
+    await db.syncQueue.put(item);
     return item.id;
   },
 

@@ -48,12 +48,13 @@ export const templateService = {
    * Create a new template
    */
   async create(template: ChecklistTemplate): Promise<string> {
-    const id = await db.templates.add(template);
+    // Use put instead of add to handle potential race conditions
+    await db.templates.put(template);
     
     // Add to sync queue
     await syncQueueService.add('create', 'template', template.id, template);
     
-    return id;
+    return template.id;
   },
 
   /**
