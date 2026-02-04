@@ -224,13 +224,13 @@ export function TemplateEditor() {
           
           {/* Save Status Indicator */}
           <div className="flex items-center gap-2 text-sm">
-            {saveStatus === 'saved' && !hasChanges && (
+            {saveStatus === 'saved' && !isNew && (
               <span className="text-success-600 flex items-center gap-1">
                 <CheckIcon className="w-4 h-4" />
                 Saved
               </span>
             )}
-            {hasChanges && (
+            {(hasChanges || isNew) && saveStatus !== 'saved' && (
               <span className="text-warning-600 flex items-center gap-1">
                 <span className="w-2 h-2 bg-warning-500 rounded-full" />
                 Unsaved
@@ -405,20 +405,20 @@ export function TemplateEditor() {
           className={`w-full py-3 px-4 rounded-xl font-semibold text-white transition-all ${
             saveStatus === 'saving'
               ? 'bg-slate-400 cursor-not-allowed'
-              : hasChanges
-              ? 'bg-primary-600 hover:bg-primary-700 active:scale-98'
-              : 'bg-success-500'
+              : saveStatus === 'saved' && !isNew
+              ? 'bg-success-500'
+              : 'bg-primary-600 hover:bg-primary-700 active:scale-98'
           }`}
         >
           {saveStatus === 'saving' ? (
             'Saving...'
-          ) : hasChanges ? (
-            'Save Template'
-          ) : (
+          ) : saveStatus === 'saved' && !isNew ? (
             <span className="flex items-center justify-center gap-2">
               <CheckIcon className="w-5 h-5" />
               Saved
             </span>
+          ) : (
+            'Save Template'
           )}
         </button>
       </div>
