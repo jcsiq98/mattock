@@ -4,6 +4,8 @@ import {
   ClipboardDocumentListIcon,
   DocumentMagnifyingGlassIcon,
   Cog6ToothIcon,
+  CloudIcon,
+  SignalSlashIcon,
 } from '@heroicons/react/24/outline';
 import {
   HomeIcon as HomeIconSolid,
@@ -11,7 +13,7 @@ import {
   DocumentMagnifyingGlassIcon as DocumentMagnifyingGlassIconSolid,
   Cog6ToothIcon as Cog6ToothIconSolid,
 } from '@heroicons/react/24/solid';
-import { useAppStore } from '../../stores/useAppStore';
+import { useOnlineStatus } from '../../hooks';
 
 const navItems = [
   {
@@ -42,10 +44,18 @@ const navItems = [
 
 export function AppShell() {
   const location = useLocation();
-  const { isOnline, pendingSyncCount } = useAppStore();
+  const { isOnline, pendingSyncCount, isSyncing } = useOnlineStatus();
 
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
+      {/* Offline Banner */}
+      {!isOnline && (
+        <div className="bg-warning-500 text-white px-4 py-2 flex items-center justify-center gap-2 text-sm font-medium">
+          <SignalSlashIcon className="w-4 h-4" />
+          You're offline — Changes saved locally
+        </div>
+      )}
+
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-4 py-3 pt-safe sticky top-0 z-40">
         <div className="flex items-center justify-between">
@@ -64,16 +74,27 @@ export function AppShell() {
             <h1 className="text-lg font-semibold text-slate-900">Property Inspector</h1>
           </div>
 
-          {/* Online/Offline Status */}
+          {/* Status Indicators */}
           <div className="flex items-center gap-2">
-            {pendingSyncCount > 0 && (
-              <span className="bg-warning-500 text-white text-xs font-medium px-2 py-1 rounded-full">
-                {pendingSyncCount} pending
+            {/* Syncing indicator */}
+            {isSyncing && (
+              <span className="flex items-center gap-1 text-primary-600 text-xs font-medium">
+                <CloudIcon className="w-4 h-4 animate-pulse" />
+                Syncing
               </span>
             )}
+            
+            {/* Pending changes badge */}
+            {pendingSyncCount > 0 && !isSyncing && (
+              <span className="bg-warning-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+                {pendingSyncCount}
+              </span>
+            )}
+            
+            {/* Online/Offline dot */}
             <div
-              className={`w-3 h-3 rounded-full ${
-                isOnline ? 'bg-success-500' : 'bg-warning-500'
+              className={`w-2.5 h-2.5 rounded-full transition-colors ${
+                isOnline ? 'bg-success-500' : 'bg-warning-500 animate-pulse'
               }`}
               title={isOnline ? 'Online' : 'Offline'}
             />
@@ -116,4 +137,3 @@ export function AppShell() {
     </div>
   );
 }
-

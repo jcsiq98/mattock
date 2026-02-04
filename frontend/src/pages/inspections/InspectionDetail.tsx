@@ -254,13 +254,13 @@ export function InspectionDetail() {
       {/* Header */}
       <div className="bg-white border-b border-slate-200 sticky top-0 z-30">
         <div className="flex items-center gap-3 p-4">
-          <button
+        <button
             onClick={() => navigate('/inspections')}
-            className="p-2 -ml-2 text-slate-600 hover:text-slate-900"
-            aria-label="Go back"
-          >
-            <ArrowLeftIcon className="w-6 h-6" />
-          </button>
+          className="p-2 -ml-2 text-slate-600 hover:text-slate-900"
+          aria-label="Go back"
+        >
+          <ArrowLeftIcon className="w-6 h-6" />
+        </button>
           <div className="flex-1 min-w-0">
             <h2 className="text-lg font-bold text-slate-900 truncate">
               {inspection.address}

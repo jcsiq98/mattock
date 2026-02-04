@@ -287,19 +287,19 @@ export function InspectionList() {
 
       {/* Empty State */}
       {inspections.length === 0 && (
-        <div className="card text-center py-12">
-          <ClipboardDocumentCheckIcon className="w-16 h-16 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-slate-900 mb-2">
-            No inspections yet
-          </h3>
-          <p className="text-slate-500 mb-6 max-w-xs mx-auto">
-            Start your first property inspection to document conditions with photos and notes.
-          </p>
-          <Link to="/inspections/new" className="btn-primary inline-flex">
-            <PlusIcon className="w-5 h-5 mr-2" />
-            Start Inspection
-          </Link>
-        </div>
+      <div className="card text-center py-12">
+        <ClipboardDocumentCheckIcon className="w-16 h-16 text-slate-300 mx-auto mb-4" />
+        <h3 className="text-lg font-semibold text-slate-900 mb-2">
+          No inspections yet
+        </h3>
+        <p className="text-slate-500 mb-6 max-w-xs mx-auto">
+          Start your first property inspection to document conditions with photos and notes.
+        </p>
+        <Link to="/inspections/new" className="btn-primary inline-flex">
+          <PlusIcon className="w-5 h-5 mr-2" />
+          Start Inspection
+        </Link>
+      </div>
       )}
 
       {/* No Results */}

@@ -3,4 +3,5 @@
  */
 
 export { useDatabase } from './useDatabase';
+export { useOnlineStatus, formatLastSynced } from './useOnlineStatus';
 

@@ -385,8 +385,8 @@ export function NewInspection() {
               )}
               <p className="text-xs text-slate-500 mt-1">
                 This will be saved for future inspections
-              </p>
-            </div>
+        </p>
+      </div>
           </div>
 
           {/* Submit Button */}
