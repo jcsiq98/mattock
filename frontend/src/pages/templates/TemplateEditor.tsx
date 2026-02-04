@@ -28,7 +28,7 @@ export function TemplateEditor() {
   const isNew = !id || id === 'new';
   const [template, setTemplate] = useState<ChecklistTemplate | null>(null);
   const [expandedSections, setExpandedSections] = useState<Set<string>>(new Set());
-  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved' | 'idle'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [hasChanges, setHasChanges] = useState(false);
 
   // Load existing template or create new one
@@ -37,6 +37,8 @@ export function TemplateEditor() {
       const newTemplate = createTemplate({ name: '', propertyType: 'other' });
       setTemplate(newTemplate);
       setExpandedSections(new Set());
+      setHasChanges(false);
+      setSaveStatus('unsaved'); // New templates start as unsaved
     } else {
       loadTemplate(id).then(() => {
         // Template will be in currentTemplate after load
@@ -52,60 +54,45 @@ export function TemplateEditor() {
       setTemplate(currentTemplate);
       // Expand all sections by default
       setExpandedSections(new Set(currentTemplate.sections.map(s => s.id)));
+      setHasChanges(false);
+      setSaveStatus('saved');
     }
   }, [currentTemplate, isNew]);
 
-  // Auto-save with debounce
-  const saveTemplate = useCallback(async (templateToSave: ChecklistTemplate, manual: boolean = false) => {
-    if (!templateToSave.name.trim()) {
-      if (manual) {
-        alert('Please enter a template name before saving.');
-      }
-      return; // Don't save without a name
+  // Manual save only - no auto-save
+  const handleSave = useCallback(async () => {
+    if (!template) return;
+    
+    if (!template.name.trim()) {
+      alert('Please enter a template name before saving.');
+      return;
     }
     
     setSaveStatus('saving');
     try {
       if (isNew) {
-        const newId = await saveNewTemplate(templateToSave);
+        const newId = await saveNewTemplate(template);
         if (newId) {
           setSaveStatus('saved');
           setHasChanges(false);
-          // Small delay to show "Saved" before navigating
+          // Navigate to edit the newly created template
           setTimeout(() => {
             navigate(`/templates/${newId}`, { replace: true });
-          }, 800);
+          }, 500);
         }
       } else {
-        await updateTemplate(templateToSave.id, templateToSave);
+        await updateTemplate(template.id, template);
         setSaveStatus('saved');
         setHasChanges(false);
-        // Hide "Saved" indicator after 2 seconds
-        setTimeout(() => {
-          setSaveStatus('idle');
-        }, 2000);
       }
     } catch (err) {
       console.error('Failed to save template:', err);
       setSaveStatus('unsaved');
-      if (manual) {
-        alert('Failed to save template. Please try again.');
-      }
+      alert('Failed to save template. Please try again.');
     }
-  }, [isNew, saveNewTemplate, updateTemplate, navigate]);
+  }, [template, isNew, saveNewTemplate, updateTemplate, navigate]);
 
-  // Debounced auto-save
-  useEffect(() => {
-    if (!template || !hasChanges || !template.name.trim()) return;
-    
-    const timer = setTimeout(() => {
-      saveTemplate(template, false);
-    }, 1000);
-
-    return () => clearTimeout(timer);
-  }, [template, hasChanges, saveTemplate]);
-
-  // Update template helper
+  // Update template helper (marks as having changes, but does NOT auto-save)
   const updateLocalTemplate = (updates: Partial<ChecklistTemplate>) => {
     if (!template) return;
     setTemplate({ ...template, ...updates, updatedAt: new Date() });
@@ -218,7 +205,7 @@ export function TemplateEditor() {
   }
 
   return (
-    <div className="min-h-screen pb-24">
+    <div className="min-h-screen pb-32">
       {/* Header */}
       <div className="sticky top-0 bg-white border-b border-slate-200 px-4 py-3 z-30">
         <div className="flex items-center justify-between">
@@ -235,19 +222,19 @@ export function TemplateEditor() {
             </h2>
           </div>
           
-          {/* Save Status */}
+          {/* Save Status Indicator */}
           <div className="flex items-center gap-2 text-sm">
-            {saveStatus === 'saving' && (
-              <span className="text-primary-600">Saving...</span>
-            )}
-            {saveStatus === 'saved' && (
+            {saveStatus === 'saved' && !hasChanges && (
               <span className="text-success-600 flex items-center gap-1">
                 <CheckIcon className="w-4 h-4" />
                 Saved
               </span>
             )}
-            {saveStatus === 'unsaved' && hasChanges && (
-              <span className="text-warning-600">●</span>
+            {hasChanges && (
+              <span className="text-warning-600 flex items-center gap-1">
+                <span className="w-2 h-2 bg-warning-500 rounded-full" />
+                Unsaved
+              </span>
             )}
           </div>
         </div>
@@ -410,25 +397,30 @@ export function TemplateEditor() {
         )}
       </div>
 
-      {/* Fixed Save Status Bar at bottom */}
-      <div className="fixed bottom-16 left-0 right-0 px-4 py-2 pointer-events-none z-30">
-        <div className="max-w-lg mx-auto">
-          {saveStatus === 'saving' && (
-            <div className="bg-primary-600 text-white text-center py-2 px-4 rounded-full text-sm font-medium shadow-lg pointer-events-auto">
-              Saving...
-            </div>
+      {/* Fixed Save Button at bottom */}
+      <div className="fixed bottom-16 left-0 right-0 p-4 bg-white border-t border-slate-200 z-30">
+        <button
+          onClick={handleSave}
+          disabled={saveStatus === 'saving'}
+          className={`w-full py-3 px-4 rounded-xl font-semibold text-white transition-all ${
+            saveStatus === 'saving'
+              ? 'bg-slate-400 cursor-not-allowed'
+              : hasChanges
+              ? 'bg-primary-600 hover:bg-primary-700 active:scale-98'
+              : 'bg-success-500'
+          }`}
+        >
+          {saveStatus === 'saving' ? (
+            'Saving...'
+          ) : hasChanges ? (
+            'Save Template'
+          ) : (
+            <span className="flex items-center justify-center gap-2">
+              <CheckIcon className="w-5 h-5" />
+              Saved
+            </span>
           )}
-          {saveStatus === 'saved' && !hasChanges && (
-            <div className="bg-success-500 text-white text-center py-2 px-4 rounded-full text-sm font-medium shadow-lg pointer-events-auto animate-pulse">
-              ✓ Saved
-            </div>
-          )}
-          {saveStatus === 'unsaved' && hasChanges && !template.name.trim() && (
-            <div className="bg-warning-500 text-white text-center py-2 px-4 rounded-full text-sm font-medium shadow-lg pointer-events-auto">
-              Enter a template name to save
-            </div>
-          )}
-        </div>
+        </button>
       </div>
     </div>
   );
