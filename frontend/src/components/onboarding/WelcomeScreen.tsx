@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import {
   ClipboardDocumentCheckIcon,
   CameraIcon,
@@ -42,7 +41,6 @@ const features = [
 ];
 
 export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
-  const navigate = useNavigate();
   const { inspectorName, setInspectorName } = useAppStore();
   const [step, setStep] = useState(0);
   const [name, setName] = useState(inspectorName);
@@ -58,13 +56,11 @@ export function WelcomeScreen({ onComplete }: WelcomeScreenProps) {
       setStep(step + 1);
     } else {
       onComplete();
-      navigate('/');
     }
   }
 
   function handleSkip() {
     onComplete();
-    navigate('/');
   }
 
   return (
