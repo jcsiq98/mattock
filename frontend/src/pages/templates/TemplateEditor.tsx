@@ -56,31 +56,46 @@ export function TemplateEditor() {
   }, [currentTemplate, isNew]);
 
   // Auto-save with debounce
-  const saveTemplate = useCallback(async (templateToSave: ChecklistTemplate) => {
-    if (!templateToSave.name.trim()) return; // Don't save without a name
+  const saveTemplate = useCallback(async (templateToSave: ChecklistTemplate, manual: boolean = false) => {
+    if (!templateToSave.name.trim()) {
+      if (manual) {
+        alert('Please enter a template name before saving.');
+      }
+      return; // Don't save without a name
+    }
     
     setSaveStatus('saving');
     try {
       if (isNew) {
         const newId = await saveNewTemplate(templateToSave);
-        navigate(`/templates/${newId}`, { replace: true });
+        if (newId) {
+          setSaveStatus('saved');
+          setHasChanges(false);
+          // Small delay to show "Saved" before navigating
+          setTimeout(() => {
+            navigate(`/templates/${newId}`, { replace: true });
+          }, 500);
+        }
       } else {
         await updateTemplate(templateToSave.id, templateToSave);
+        setSaveStatus('saved');
+        setHasChanges(false);
       }
-      setSaveStatus('saved');
-      setHasChanges(false);
     } catch (err) {
       console.error('Failed to save template:', err);
       setSaveStatus('unsaved');
+      if (manual) {
+        alert('Failed to save template. Please try again.');
+      }
     }
   }, [isNew, saveNewTemplate, updateTemplate, navigate]);
 
   // Debounced auto-save
   useEffect(() => {
-    if (!template || !hasChanges) return;
+    if (!template || !hasChanges || !template.name.trim()) return;
     
     const timer = setTimeout(() => {
-      saveTemplate(template);
+      saveTemplate(template, false);
     }, 1000);
 
     return () => clearTimeout(timer);
@@ -392,13 +407,14 @@ export function TemplateEditor() {
       </div>
 
       {/* Manual Save Button (for when auto-save hasn't triggered) */}
-      {hasChanges && template.name.trim() && (
+      {hasChanges && (
         <div className="fixed bottom-20 left-0 right-0 p-4 bg-gradient-to-t from-slate-50 to-transparent pointer-events-none">
           <button
-            onClick={() => saveTemplate(template)}
+            onClick={() => saveTemplate(template, true)}
             className="btn-primary w-full pointer-events-auto"
+            disabled={saveStatus === 'saving'}
           >
-            Save Template
+            {saveStatus === 'saving' ? 'Saving...' : 'Save Template'}
           </button>
         </div>
       )}
