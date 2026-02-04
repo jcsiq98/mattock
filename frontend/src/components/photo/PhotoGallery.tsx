@@ -7,10 +7,12 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   PhotoIcon,
+  PencilSquareIcon,
 } from '@heroicons/react/24/outline';
 import { photoService } from '../../services/photoService';
 import type { Photo } from '../../types/photo';
 import { formatGeolocation, formatFileSize } from '../../types/photo';
+import { AnnotationEditor } from './AnnotationEditor';
 
 interface PhotoGalleryProps {
   inspectionId: string;
@@ -135,6 +137,7 @@ interface PhotoViewerProps {
   onIndexChange: (index: number) => void;
   onClose: () => void;
   onDelete?: (photoId: string) => void;
+  onPhotoUpdated?: (photo: Photo) => void;
 }
 
 function PhotoViewer({
@@ -143,9 +146,11 @@ function PhotoViewer({
   onIndexChange,
   onClose,
   onDelete,
+  onPhotoUpdated,
 }: PhotoViewerProps) {
   const [showInfo, setShowInfo] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const [showAnnotationEditor, setShowAnnotationEditor] = useState(false);
   const photo = photos[currentIndex];
 
   function handlePrev() {
@@ -163,6 +168,31 @@ function PhotoViewer({
   function handleDelete() {
     if (onDelete && photo) {
       onDelete(photo.id);
+    }
+  }
+
+  async function handleSaveAnnotation(annotatedImageData: string) {
+    if (!photo) return;
+    
+    try {
+      await photoService.saveAnnotation(photo.id, annotatedImageData);
+      
+      // Update local photo object
+      const updatedPhoto = {
+        ...photo,
+        annotatedImageData,
+        hasAnnotations: true,
+      };
+      
+      // Notify parent
+      onPhotoUpdated?.(updatedPhoto);
+      
+      // Update local state by replacing the photo in the array
+      photos[currentIndex] = updatedPhoto;
+      
+      setShowAnnotationEditor(false);
+    } catch (error) {
+      console.error('Failed to save annotation:', error);
     }
   }
 
@@ -207,6 +237,17 @@ function PhotoViewer({
         </span>
 
         <div className="flex items-center gap-2">
+          {/* Edit/Annotate button */}
+          {onDelete && (
+            <button
+              onClick={() => setShowAnnotationEditor(true)}
+              className="text-white p-2 rounded-full hover:bg-white/20 transition-colors"
+              aria-label="Annotate"
+            >
+              <PencilSquareIcon className="w-6 h-6" />
+            </button>
+          )}
+          
           {onDelete && (
             <button
               onClick={() => setConfirmDelete(true)}
@@ -286,6 +327,7 @@ function PhotoViewer({
       </div>
 
       {/* Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {confirmDelete && (
         <div className="absolute inset-0 bg-black/80 flex items-center justify-center p-4 z-20">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full space-y-4">
@@ -313,6 +355,15 @@ function PhotoViewer({
           </div>
         </div>
       )}
+
+      {/* Annotation Editor */}
+      {showAnnotationEditor && photo && (
+        <AnnotationEditor
+          imageData={photo.annotatedImageData || photo.imageData}
+          onSave={handleSaveAnnotation}
+          onCancel={() => setShowAnnotationEditor(false)}
+        />
+      )}
     </div>
   );
 }
@@ -334,6 +385,10 @@ export function InlinePhotoGallery({
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
+
+  function handlePhotoUpdated(updatedPhoto: Photo) {
+    setPhotos(prev => prev.map(p => p.id === updatedPhoto.id ? updatedPhoto : p));
+  }
 
   useEffect(() => {
     async function loadPhotos() {
@@ -393,13 +448,17 @@ export function InlinePhotoGallery({
           <button
             key={photo.id}
             onClick={() => setSelectedIndex(index)}
-            className="w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary-300 transition-all border border-slate-200"
+            className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 hover:ring-2 hover:ring-primary-300 transition-all border border-slate-200"
           >
             <img
-              src={photo.thumbnailData || photo.imageData}
+              src={photo.annotatedImageData || photo.thumbnailData || photo.imageData}
               alt={`Photo ${index + 1}`}
               className="w-full h-full object-cover"
             />
+            {/* Annotation indicator */}
+            {photo.hasAnnotations && (
+              <div className="absolute top-0.5 right-0.5 w-2.5 h-2.5 bg-primary-500 rounded-full border border-white" />
+            )}
           </button>
         ))}
       </div>
@@ -412,6 +471,7 @@ export function InlinePhotoGallery({
           onIndexChange={setSelectedIndex}
           onClose={() => setSelectedIndex(null)}
           onDelete={editable ? handleDelete : undefined}
+          onPhotoUpdated={handlePhotoUpdated}
         />
       )}
     </>

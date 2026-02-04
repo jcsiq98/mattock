@@ -87,7 +87,7 @@ export function Settings() {
           <p><strong>Property Inspector</strong> v0.1.0</p>
           <p>Mobile-first inspection app with offline support</p>
           <p className="text-xs text-slate-400 pt-2">
-            Milestone 5 Complete • MVP in Progress
+            Milestone 6 Complete • MVP in Progress
           </p>
         </div>
       </section>
