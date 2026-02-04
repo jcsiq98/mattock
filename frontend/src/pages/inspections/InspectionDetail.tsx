@@ -7,20 +7,19 @@ import {
   MinusIcon,
   ChevronDownIcon,
   ChevronUpIcon,
-  CameraIcon,
   ChatBubbleLeftIcon,
   CheckCircleIcon,
   LockClosedIcon,
   LockOpenIcon,
   EllipsisVerticalIcon,
-  MapPinIcon,
   CalendarIcon,
   UserIcon,
 } from '@heroicons/react/24/outline';
 import { CheckCircleIcon as CheckCircleSolid } from '@heroicons/react/24/solid';
 import { inspectionService } from '../../services/inspectionService';
 import type { Inspection, ItemStatus, InspectionSection, InspectionItem } from '../../types/inspection';
-import { ITEM_STATUS_LABELS, calculateInspectionSummary } from '../../types/inspection';
+import { calculateInspectionSummary } from '../../types/inspection';
+import { PhotoCaptureButton, InlinePhotoGallery } from '../../components/photo';
 
 export function InspectionDetail() {
   const { id } = useParams<{ id: string }>();
@@ -139,6 +138,40 @@ export function InspectionDetail() {
       }
       return next;
     });
+  }
+
+  function handlePhotoAdded(sectionId: string, itemId: string, photoId: string) {
+    if (!inspection) return;
+
+    const updatedInspection = { ...inspection };
+    const section = updatedInspection.sections.find((s) => s.sectionId === sectionId);
+    if (!section) return;
+
+    const item = section.items.find((i) => i.itemId === itemId);
+    if (!item) return;
+
+    if (!item.photoIds.includes(photoId)) {
+      item.photoIds.push(photoId);
+      updatedInspection.updatedAt = new Date();
+      setInspection(updatedInspection);
+      autoSave(updatedInspection);
+    }
+  }
+
+  function handlePhotoDeleted(sectionId: string, itemId: string, photoId: string) {
+    if (!inspection) return;
+
+    const updatedInspection = { ...inspection };
+    const section = updatedInspection.sections.find((s) => s.sectionId === sectionId);
+    if (!section) return;
+
+    const item = section.items.find((i) => i.itemId === itemId);
+    if (!item) return;
+
+    item.photoIds = item.photoIds.filter((id) => id !== photoId);
+    updatedInspection.updatedAt = new Date();
+    setInspection(updatedInspection);
+    autoSave(updatedInspection);
   }
 
   async function handleComplete() {
@@ -371,6 +404,7 @@ export function InspectionDetail() {
           .map((section) => (
             <SectionCard
               key={section.sectionId}
+              inspectionId={inspection.id}
               section={section}
               expanded={expandedSections.has(section.sectionId)}
               onToggle={() => toggleSection(section.sectionId)}
@@ -381,6 +415,12 @@ export function InspectionDetail() {
               }
               onNotesChange={(itemId, notes) =>
                 handleNotesChange(section.sectionId, itemId, notes)
+              }
+              onPhotoAdded={(itemId, photoId) =>
+                handlePhotoAdded(section.sectionId, itemId, photoId)
+              }
+              onPhotoDeleted={(itemId, photoId) =>
+                handlePhotoDeleted(section.sectionId, itemId, photoId)
               }
               disabled={isCompleted}
             />
@@ -464,6 +504,7 @@ export function InspectionDetail() {
 
 // Section Card Component
 interface SectionCardProps {
+  inspectionId: string;
   section: InspectionSection;
   expanded: boolean;
   onToggle: () => void;
@@ -471,10 +512,13 @@ interface SectionCardProps {
   onToggleNotes: (itemId: string) => void;
   onStatusChange: (itemId: string, status: ItemStatus) => void;
   onNotesChange: (itemId: string, notes: string) => void;
+  onPhotoAdded: (itemId: string, photoId: string) => void;
+  onPhotoDeleted: (itemId: string, photoId: string) => void;
   disabled: boolean;
 }
 
 function SectionCard({
+  inspectionId,
   section,
   expanded,
   onToggle,
@@ -482,6 +526,8 @@ function SectionCard({
   onToggleNotes,
   onStatusChange,
   onNotesChange,
+  onPhotoAdded,
+  onPhotoDeleted,
   disabled,
 }: SectionCardProps) {
   const completedCount = section.items.filter((i) => i.status !== 'pending').length;
@@ -529,12 +575,16 @@ function SectionCard({
             .map((item, index) => (
               <ItemCard
                 key={item.itemId}
+                inspectionId={inspectionId}
+                sectionId={section.sectionId}
                 item={item}
                 isLast={index === section.items.length - 1}
                 notesExpanded={expandedNotes.has(item.itemId)}
                 onToggleNotes={() => onToggleNotes(item.itemId)}
                 onStatusChange={(status) => onStatusChange(item.itemId, status)}
                 onNotesChange={(notes) => onNotesChange(item.itemId, notes)}
+                onPhotoAdded={(photoId) => onPhotoAdded(item.itemId, photoId)}
+                onPhotoDeleted={(photoId) => onPhotoDeleted(item.itemId, photoId)}
                 disabled={disabled}
               />
             ))}
@@ -546,22 +596,30 @@ function SectionCard({
 
 // Item Card Component
 interface ItemCardProps {
+  inspectionId: string;
+  sectionId: string;
   item: InspectionItem;
   isLast: boolean;
   notesExpanded: boolean;
   onToggleNotes: () => void;
   onStatusChange: (status: ItemStatus) => void;
   onNotesChange: (notes: string) => void;
+  onPhotoAdded: (photoId: string) => void;
+  onPhotoDeleted: (photoId: string) => void;
   disabled: boolean;
 }
 
 function ItemCard({
+  inspectionId,
+  sectionId,
   item,
   isLast,
   notesExpanded,
   onToggleNotes,
   onStatusChange,
   onNotesChange,
+  onPhotoAdded,
+  onPhotoDeleted,
   disabled,
 }: ItemCardProps) {
   const statusButtons: { status: ItemStatus; icon: typeof CheckIcon; label: string; colors: string }[] = [
@@ -627,15 +685,26 @@ function ItemCard({
           {item.notes ? 'Edit Note' : 'Add Note'}
         </button>
         
-        {/* Photo button placeholder - will be functional in Milestone 5 */}
-        <button
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm bg-slate-100 text-slate-600 hover:bg-slate-200 transition-colors"
-          title="Photo capture coming in Milestone 5"
-        >
-          <CameraIcon className="w-4 h-4" />
-          {item.photoIds.length > 0 ? item.photoIds.length : 'Photo'}
-        </button>
+        {/* Photo capture button */}
+        {!disabled && (
+          <PhotoCaptureButton
+            inspectionId={inspectionId}
+            sectionId={sectionId}
+            itemId={item.itemId}
+            photoCount={item.photoIds.length}
+            onPhotoAdded={onPhotoAdded}
+          />
+        )}
       </div>
+
+      {/* Photo Gallery */}
+      {item.photoIds.length > 0 && (
+        <div className="mt-2">
+          <InlinePhotoGallery
+            photoIds={item.photoIds}
+          />
+        </div>
+      )}
 
       {/* Notes Input */}
       {notesExpanded && (
