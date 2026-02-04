@@ -19,27 +19,17 @@ export const syncQueueService = {
     entityId: string,
     data?: unknown
   ): Promise<string> {
-    // Check if there's already a pending item for this entity
-    const existing = await db.syncQueue
-      .where(['entityType', 'entityId'])
-      .equals([entityType, entityId])
-      .and(item => item.status === 'pending')
-      .first();
-
-    if (existing) {
-      // Update existing queue item
-      await db.syncQueue.update(existing.id, {
-        action: action === 'delete' ? 'delete' : existing.action === 'create' ? 'create' : action,
-        data: action !== 'delete' ? data : undefined,
-        createdAt: new Date(),
-      });
-      return existing.id;
+    try {
+      // Simplified: just add to queue without checking for duplicates
+      // This avoids compound index issues
+      const item = createSyncQueueItem(action, entityType, entityId, data);
+      await db.syncQueue.put(item);
+      return item.id;
+    } catch (error) {
+      console.error('Sync queue add error:', error);
+      // Don't throw - sync queue failures shouldn't block saves
+      return '';
     }
-
-    // Create new queue item
-    const item = createSyncQueueItem(action, entityType, entityId, data);
-    await db.syncQueue.put(item);
-    return item.id;
   },
 
   /**

@@ -48,30 +48,40 @@ export const templateService = {
    * Create a new template
    */
   async create(template: ChecklistTemplate): Promise<string> {
-    // Use put instead of add to handle potential race conditions
-    await db.templates.put(template);
-    
-    // Add to sync queue
-    await syncQueueService.add('create', 'template', template.id, template);
-    
-    return template.id;
+    try {
+      // Use put instead of add to handle potential race conditions
+      await db.templates.put(template);
+      
+      // Add to sync queue (non-blocking)
+      syncQueueService.add('create', 'template', template.id, template).catch(console.error);
+      
+      return template.id;
+    } catch (error) {
+      console.error('Template create error:', error);
+      throw error;
+    }
   },
 
   /**
    * Update an existing template
    */
   async update(id: string, updates: Partial<ChecklistTemplate>): Promise<void> {
-    const updatedData = {
-      ...updates,
-      updatedAt: new Date(),
-    };
-    
-    await db.templates.update(id, updatedData);
-    
-    // Add to sync queue
-    const template = await db.templates.get(id);
-    if (template) {
-      await syncQueueService.add('update', 'template', id, template);
+    try {
+      const updatedData = {
+        ...updates,
+        updatedAt: new Date(),
+      };
+      
+      await db.templates.update(id, updatedData);
+      
+      // Add to sync queue (non-blocking)
+      const template = await db.templates.get(id);
+      if (template) {
+        syncQueueService.add('update', 'template', id, template).catch(console.error);
+      }
+    } catch (error) {
+      console.error('Template update error:', error);
+      throw error;
     }
   },
 
