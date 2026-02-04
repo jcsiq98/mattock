@@ -41,10 +41,11 @@ export const db = new InspectorDatabase();
  * Initialize database with default data if empty
  */
 export async function initializeDatabase(): Promise<void> {
-  // Check if settings exist, if not create defaults
-  const settingsCount = await db.settings.count();
-  if (settingsCount === 0) {
-    await db.settings.add({
+  // Ensure settings exist (use put to handle race conditions)
+  const existingSettings = await db.settings.get('main');
+  if (!existingSettings) {
+    // Use put instead of add to handle race conditions
+    await db.settings.put({
       id: 'main',
       inspectorName: '',
       autoSync: true,
@@ -181,7 +182,8 @@ async function seedSampleTemplates(): Promise<void> {
     ],
   };
 
-  await db.templates.bulkAdd([studioTemplate, bedroomTemplate]);
+  // Use bulkPut to handle race conditions (won't fail if key exists)
+  await db.templates.bulkPut([studioTemplate, bedroomTemplate]);
   console.log('Sample templates seeded');
 }
 
