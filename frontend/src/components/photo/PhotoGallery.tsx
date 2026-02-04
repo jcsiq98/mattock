@@ -237,17 +237,16 @@ function PhotoViewer({
         </span>
 
         <div className="flex items-center gap-2">
-          {/* Edit/Annotate button */}
-          {onDelete && (
-            <button
-              onClick={() => setShowAnnotationEditor(true)}
-              className="text-white p-2 rounded-full hover:bg-white/20 transition-colors"
-              aria-label="Annotate"
-            >
-              <PencilSquareIcon className="w-6 h-6" />
-            </button>
-          )}
+          {/* Edit/Annotate button - always visible */}
+          <button
+            onClick={() => setShowAnnotationEditor(true)}
+            className="text-white p-2 rounded-full hover:bg-white/20 transition-colors"
+            aria-label="Annotate"
+          >
+            <PencilSquareIcon className="w-6 h-6" />
+          </button>
           
+          {/* Delete button - only when editable */}
           {onDelete && (
             <button
               onClick={() => setConfirmDelete(true)}
